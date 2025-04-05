@@ -12,9 +12,9 @@ moons=(
     [neptune]=14
 )
 if [[ -n "${moons[$planet]+x}" ]]; then
-    echo "Planet $1 has ${moons[$planet]} moon(-s)"
+    echo "${moons[$planet]}"
 else
-    echo "This planet does not exist!"
+    echo "Unknown planet"
     exit 1
 fi
 

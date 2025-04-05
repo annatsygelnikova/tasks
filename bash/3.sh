@@ -1,13 +1,13 @@
 #!/bin/bash
-while IFS= read -r file; do
-    if [[ -e "$file" ]]; then
-        if [[ -f "$file" ]]; then
-            echo "$(wc -l < "$file") $file"
-        else
-            echo "Предупреждение: '$file' не является обычным файлом" >&2
-        fi
+for file in "$@"
+ do
+    if [ ! -f "$file" ]
+    then
+	echo "$file => not found"
     else
-        echo "Ошибка: файл '$file' не найден" >&2
+        lines=$(wc -l < "$file")
+	echo "$file => $lines"
     fi
-done <<< "$@"
+done 
+
 
