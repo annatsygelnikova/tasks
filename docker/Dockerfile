@@ -1,29 +1,31 @@
 FROM python:3.12-alpine AS builder
-
-WORKDIR /build 
-
-COPY pyproject.toml .
-COPY conftest.py .
-COPY src/ ./src
-COPY tests/ ./tests
- 
-RUN pip install --upgrade pip && \
-    pip install --prefix=/deps .[test]
- 
-FROM python:3.12-alpine AS runtime
- 
-RUN adduser --disabled-password --gecos "" appuser
  
 WORKDIR /app
  
-COPY --from=builder /deps /usr/local
+COPY pyproject.toml ./
+COPY conftest.py ./
+COPY src/ ./src
+COPY tests/ ./tests  
  
-COPY --from=builder /build/ .
+RUN pip install --upgrade pip \
+    && pip install --prefix=/install .[test]  
+ 
+FROM python:3.12-alpine
+ 
+RUN adduser -D fastapiuser
+ 
+WORKDIR /app
+ 
+COPY --from=builder /install /usr/local
+ 
+COPY --from=builder /app/conftest.py ./  
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/tests ./tests  
  
 ENV PYTHONPATH=/app
  
-USER appuser
+USER fastapiuser
  
 EXPOSE 8043
-
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8043"]
+ 
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8043"]
