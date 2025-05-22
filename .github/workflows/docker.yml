@@ -27,10 +27,10 @@ jobs:
  
   test:
     runs-on: ubuntu-latest
-    needs: verify
+    needs: [ build-and-push ]
     services:
       postgres:
-        image: postgres:15
+        image: postgres:alpine
         env:
           POSTGRES_USER: kubsu
           POSTGRES_PASSWORD: kubsu
