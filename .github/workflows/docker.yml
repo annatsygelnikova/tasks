@@ -17,8 +17,8 @@ jobs:
     - name: Build Docker image
       run: | 
         docker build \
-        -t ${{ secrets.DOCKER_USER }}/kubsu_docker:build-${{ github.sha }} \
-        -t ${{ secrets.DOCKER_USER }}/kubsu_docker:latest \
+        -t ${{ secrets.DOCKER_USER }}/homeworklinux:build-${{ github.sha }} \
+        -t ${{ secrets.DOCKER_USER }}/homeworklinux:latest \
         -f docker/Dockerfile \
         docker/
  
