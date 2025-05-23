@@ -72,11 +72,15 @@ jobs:
     runs-on: self-hosted
     needs: [ test ]
     steps:
-      - name: Execute ssh command via using private key
+      - name: Deploy
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.PORT }}
-          script: cd $HOME/tasks/docker && ./restart.sh
+        host: ${{ secrets.REMOTE_HOST }}
+        username: ${{ secrets.REMOTE_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ secrets.PORT }}
+        script: |
+          cd ~/tasks/docker
+          ls -la restart.sh       # Проверить файл
+          chmod +x restart.sh     # Дать права
+          ./restart.sh            # Запустить
