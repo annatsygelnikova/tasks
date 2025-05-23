@@ -52,7 +52,7 @@ jobs:
           docker/
  
           echo "Docker image built successfully"
-          docker images | grep ${{ secrets.DOCKER_USER }}/homework_linux
+          docker images | grep ${{ secrets.DOCKER_USER }}/homeworklinux
  
       
       - name: Run tests
