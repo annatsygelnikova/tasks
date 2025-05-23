@@ -32,5 +32,5 @@ async def user(db: AsyncSession) -> User:
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    return usersyncio
+    return user
 
