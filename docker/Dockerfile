@@ -23,7 +23,7 @@ COPY --from=builder /app/conftest.py ./
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/tests ./tests
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8043"]
+CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8043"]
 
 USER root
 RUN chown -R fastapiuser:fastapiuser /app
