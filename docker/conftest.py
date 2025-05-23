@@ -1,4 +1,4 @@
-import pytest_aimport pytest_asyncio
+import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
