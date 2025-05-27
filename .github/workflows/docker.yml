@@ -7,41 +7,29 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-    - name: Cache Docker layers
-      uses: actions/cache@v3
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: docker/
+          file: docker/Dockerfile
+          tags: |
+            ${{ secrets.DOCKER_USER }}/homeworklinux:build-${{ github.sha }}
+            ${{ secrets.DOCKER_USER }}/homeworklinux:latest
+          cache-from: type=gha  # Используем кеш GitHub
+          cache-to: type=gha,mode=max
 
-    - name: Build Docker image
-      uses: docker/build-push-action@v4
-      with:
-        context: docker/
-        file: docker/Dockerfile
-        tags: |
-          ${{ secrets.DOCKER_USER }}/homeworklinux:build-${{ github.sha }}
-          ${{ secrets.DOCKER_USER }}/homeworklinux:latest
-        cache-from: type=local,src=/tmp/.buildx-cache
-        cache-to: type=local,dest=/tmp/.buildx-cache-new
-        outputs: type=docker
-
-    - name: Save Docker image
-      uses: actions/upload-artifact@v3
-      with:
-        name: docker-image
-        path: /tmp/docker-image.tar
+      - name: Save image as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-image
+          path: /tmp/docker-image.tar
 
   test:
     runs-on: ubuntu-latest
@@ -56,17 +44,14 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s
-
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Load Docker image
+      - name: Download image artifact
         uses: actions/download-artifact@v3
         with:
           name: docker-image
           path: /tmp
 
-      - name: Load image into Docker
+      - name: Load Docker image
         run: docker load -i /tmp/docker-image.tar
 
       - name: Run tests
@@ -79,8 +64,17 @@ jobs:
     runs-on: self-hosted
     needs: [ test ]
     steps:
-      - name: Deploy
-        uses: appleboy/ssh-action@master
+      - name: Download image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image
+          path: /tmp
+
+      - name: Load Docker image
+        run: docker load -i /tmp/docker-image.tar
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
@@ -88,5 +82,7 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             cd ~/tasks/docker
+            ls -la restart.sh
             chmod +x restart.sh
             ./restart.sh
+
