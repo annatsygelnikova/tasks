@@ -1,19 +1,15 @@
 name: docker
- 
 on:
   push:
     branches: [ main ]
- 
 jobs:
   verify:
     runs-on: ubuntu-latest
- 
     steps: 
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
- 
     - name: Build Docker image
       run: | 
         docker build \
@@ -21,10 +17,8 @@ jobs:
         -t ${{ secrets.DOCKER_USER }}/homeworklinux:latest \
         -f docker/Dockerfile \
         docker/
- 
         echo "Docker image built successfully"
         docker images | grep ${{ secrets.DOCKER_USER }}/homeworklinux
- 
   test:
     runs-on: ubuntu-latest
     needs: verify
@@ -38,36 +32,18 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s
- 
     steps:
       - uses: actions/checkout@v4
       
-      - name: Build app image
+      - name: Load Docker image from verify job
         run: |
-          docker build \
-          -t ${{ secrets.DOCKER_USER }}/homeworklinux:build-${{ github.sha }} \
-          -t ${{ secrets.DOCKER_USER }}/homeworklinux:latest \
-          -f docker/Dockerfile \
-          docker/
- 
-          echo "Docker image built successfully"
-          docker images | grep ${{ secrets.DOCKER_USER }}/homeworklinux
- 
-      
+          docker load -i /tmp/docker-image.tar || true
+          docker images
       - name: Run tests
         run: |
           docker run --network host \
             -e TESTING=1 \
             ${{ secrets.DOCKER_USER }}/homeworklinux:build-${{ github.sha }} pytest -v ./tests/
- 
-      - name: Push to docker registry
-        if: success()
-        run: |
-          docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASS }}
-          docker push annatsygelnikova/homeworklinux:build-${{ github.sha }}
-          docker push annatsygelnikova/homeworklinux:latest
-          echo "Would have pushed app:${{ github.sha }}"
-          
   deploy:
     runs-on: self-hosted
     needs: [ test ]
@@ -81,6 +57,4 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             cd ~/tasks/docker
-            ls -la restart.sh       # Проверить файл
-            chmod +x restart.sh     # Дать права
-            ./restart.sh            # Запустить
+            ./restart.sh
