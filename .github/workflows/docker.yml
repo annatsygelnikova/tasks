@@ -11,28 +11,32 @@ jobs:
     steps: 
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
  
-    - name: Build Docker image
+    - name: Login to Docker Hub
+      if: github.event_name != 'pull_request'
+      run: echo "${{ secrets.DOCKER_PASS }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
+ 
+    - name: Pull latest image for cache
+      run: |
+        docker pull ${{ secrets.DOCKER_USER }}/homeworklinux:latest || true
+ 
+    - name: Build Docker image with cache
       run: | 
         docker build \
-        -t ${{ secrets.DOCKER_USER }}/homeworklinux:build-${{ github.sha }} \
-        -t ${{ secrets.DOCKER_USER }}/homeworklinux:latest \
-        -f docker/Dockerfile \
-        docker/
+          --cache-from ${{ secrets.DOCKER_USER }}/homeworklinux:latest \
+          -t ${{ secrets.DOCKER_USER }}/homeworklinux:build-${{ github.sha }} \
+          -t ${{ secrets.DOCKER_USER }}/homeworklinux:latest \
+          -f docker/Dockerfile \
+          docker/
  
         echo "Docker image built successfully"
         docker images | grep ${{ secrets.DOCKER_USER }}/homeworklinux
  
-    - name: Save Docker image
-      run: docker save -o /tmp/docker-image.tar ${{ secrets.DOCKER_USER }}/homeworklinux:build-${{ github.sha }}
-      
-    - name: Upload Docker image
-      uses: actions/upload-artifact@v4
-      with:
-        name: docker-image
-        path: /tmp/docker-image.tar
+    - name: Push latest image
+      if: github.event_name != 'pull_request'
+      run: |
+        docker push ${{ secrets.DOCKER_USER }}/homeworklinux:build-${{ github.sha }}
+        docker push ${{ secrets.DOCKER_USER }}/homeworklinux:latest
  
   test:
     runs-on: ubuntu-latest
@@ -51,14 +55,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Download Docker image
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
-          path: /tmp
- 
-      - name: Load Docker image
-        run: docker load -i /tmp/docker-image.tar
+      - name: Pull built image
+        run: |
+          echo "${{ secrets.DOCKER_PASS }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
+          docker pull ${{ secrets.DOCKER_USER }}/homeworklinux:build-${{ github.sha }}
  
       - name: Run tests
         run: |
